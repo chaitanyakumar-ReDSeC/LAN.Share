@@ -3,76 +3,217 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LANshare | Command Center</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>LANshare</title>
     <script src="/socket.io/socket.io.js"></script>
-    <!-- Custom CSS Link -->
-    <link rel="stylesheet" href="/css/style.css">
-</head>
-<body class="min-h-screen flex flex-col font-sans">
+    <style>
+        :root {
+            --bg-black: #0a0a0a;
+            --panel-bg: #141414;
+            --panel-border: #262626;
+            --accent-red: #dc2626;
+            --accent-red-hover: #b91c1c;
+            --text-white: #ffffff;
+            --text-muted: #a3a3a3;
+        }
 
-    <!-- Header -->
-    <header class="border-b border-red-600/40 bg-black p-4 px-8 flex justify-between items-center">
-        <div class="flex items-center space-x-3">
-            <div class="w-3 h-3 rounded-full bg-red-600 pulse-red"></div>
-            <h1 class="text-2xl font-black tracking-widest text-white uppercase">LAN<span class="text-red-600">share</span></h1>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: var(--bg-black);
+            color: var(--text-white);
+            font-family: system-ui, -apple-system, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        header {
+            background-color: #000;
+            border-bottom: 1px solid rgba(220, 38, 38, 0.4);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logo-container { display: flex; align-items: center; gap: 0.75rem; }
+        .pulse-red {
+            width: 12px; height: 12px; border-radius: 50%;
+            background-color: var(--accent-red);
+            box-shadow: 0 0 10px var(--accent-red);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; }
+        }
+        .logo-text { font-size: 1.5rem; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; }
+        .logo-text span { color: var(--accent-red); }
+        .status-badge {
+            font-family: monospace; font-size: 0.75rem; text-transform: uppercase;
+            padding: 0.25rem 0.75rem; background-color: #171717; border: 1px solid #404040;
+            color: #a3a3a3; border-radius: 4px;
+        }
+        .status-online { background-color: rgba(220, 38, 38, 0.1); border-color: var(--accent-red); color: var(--accent-red); font-weight: bold; }
+
+        /* Main Dashboard */
+        main {
+            flex: 1; max-width: 1280px; width: 100%; margin: 0 auto; padding: 2rem;
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 2rem;
+        }
+        .card {
+            background-color: var(--panel-bg); border: 1px solid var(--panel-border);
+            border-radius: 8px; padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between;
+            transition: border-color 0.2s;
+        }
+        .card:hover { border-color: rgba(220, 38, 38, 0.5); }
+        .card-header {
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid var(--panel-border); padding-bottom: 0.75rem; margin-bottom: 1rem;
+        }
+        .card-title { font-size: 1.25rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+        .badge-mode { font-size: 0.7rem; font-family: monospace; color: var(--accent-red); }
+        .card-desc { color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.5rem; }
+
+        /* Form Inputs & Buttons */
+        input[type="text"] {
+            width: 100%; background: #000; border: 1px solid var(--panel-border);
+            border-radius: 4px; padding: 0.75rem; color: #fff; font-size: 0.875rem;
+            margin-bottom: 1rem; outline: none; font-family: monospace;
+        }
+        input[type="text"]:focus { border-color: var(--accent-red); }
+        .btn {
+            width: 100%; padding: 0.85rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 1px; border-radius: 4px; cursor: pointer; border: none; transition: background 0.2s;
+        }
+        .btn-red { background-color: var(--accent-red); color: #fff; }
+        .btn-red:hover { background-color: var(--accent-red-hover); }
+        .btn-outline { background: #000; border: 1px solid var(--accent-red); color: var(--accent-red); }
+        .btn-outline:hover { background: var(--accent-red); color: #fff; }
+
+        /* Stream Feed Cards */
+        .cards-list { display: flex; flex-direction: column; gap: 0.75rem; max-height: 300px; overflow-y: auto; }
+        .feed-card {
+            background: #000; border: 1px solid var(--panel-border); border-radius: 4px;
+            padding: 1rem; display: flex; justify-content: space-between; align-items: center;
+        }
+        .feed-card:hover { border-color: var(--accent-red); }
+        .feed-btn { width: auto; padding: 0.5rem 1rem; font-size: 0.75rem; background: #fff; color: #000; }
+        .feed-btn:hover { background: var(--accent-red); color: #fff; }
+        .no-feeds { text-align: center; color: #525252; font-family: monospace; padding: 2rem 0; font-size: 0.875rem; border: 1px dashed var(--panel-border); border-radius: 4px; }
+
+        /* Viewer Modal */
+        #viewer-modal {
+            position: fixed; inset: 0; background: #000; z-index: 99;
+            display: none; flex-direction: column; width: 100vw; height: 100vh;
+        }
+        .viewer-header { 
+            background: var(--panel-bg); 
+            border-bottom: 1px solid var(--panel-border); 
+            padding: 0.75rem 1.5rem; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            z-index: 10;
+        }
+        .viewer-body { 
+            flex: 1; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            padding: 0;
+            margin: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            overflow: hidden;
+        }
+
+        /* Fullscreen-ready video element */
+        video { 
+            width: 100%; 
+            height: 100%; 
+            max-width: 100vw;
+            max-height: 100vh;
+            object-fit: contain; 
+            background: #000; 
+            border: none; 
+            outline: none;
+        }
+
+        :fullscreen, :-webkit-full-screen {
+            width: 100vw !important;
+            height: 100vh !important;
+        }
+
+        :fullscreen video, :-webkit-full-screen video {
+            width: 100vw !important;
+            height: 100vh !important;
+            object-fit: contain !important;
+        }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo-container">
+            <div class="pulse-red"></div>
+            <div class="logo-text">LAN<span>share</span></div>
         </div>
-        <span id="connection-status" class="text-xs uppercase px-3 py-1 bg-neutral-900 border border-neutral-700 text-neutral-400 rounded">Connecting...</span>
+        <div id="connection-status" class="status-badge">Connecting...</div>
     </header>
 
-    <!-- Main Container -->
-    <main class="flex-1 max-w-7xl w-full mx-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
-        
-        <!-- CARD 1: Share Screen -->
-        <section class="bg-neutral-900/90 border border-neutral-800 rounded-lg p-6 flex flex-col justify-between card-hover">
+    <main>
+        <!-- Share Card -->
+        <section class="card">
             <div>
-                <h2 class="text-xl font-bold uppercase tracking-wider text-white border-b border-neutral-800 pb-3 mb-4 flex justify-between items-center">
-                    Share Screen <span class="text-xs text-red-600 font-mono">HOST MODE</span>
-                </h2>
-                <p class="text-neutral-400 text-sm mb-6">Broadcast your display directly to any LAN device connected on this network.</p>
-                <input type="text" id="device-name" placeholder="Device Label (e.g. Sir's Rig)" class="w-full bg-black border border-neutral-800 rounded p-3 text-white focus:outline-none focus:border-red-600 mb-4 text-sm font-mono">
+                <div class="card-header">
+                    <div class="card-title">Share Screen</div>
+                    <div class="badge-mode">HOST MODE</div>
+                </div>
+                <div class="card-desc">Broadcast your display directly to any LAN device connected on this network.</div>
+                <input type="text" id="device-name" placeholder="Device Label (e.g. Chaitanya)">
             </div>
-            
-            <div id="share-controls">
-                <button id="btn-start-share" onclick="startSharing()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 uppercase tracking-wider rounded transition">
-                    Start Sharing
-                </button>
-                <button id="btn-stop-share" onclick="stopSharing()" class="hidden w-full bg-neutral-950 border border-red-600 text-red-600 hover:bg-red-600 hover:text-white font-bold py-3 uppercase tracking-wider rounded transition">
-                    Stop Broadcast
-                </button>
+            <div>
+                <button id="btn-start-share" onclick="startSharing()" class="btn btn-red">Start Sharing</button>
+                <button id="btn-stop-share" onclick="stopSharing()" class="btn btn-outline hidden">Stop Broadcast</button>
             </div>
         </section>
 
-        <!-- CARD 2: View Screen -->
-        <section class="bg-neutral-900/90 border border-neutral-800 rounded-lg p-6 flex flex-col card-hover">
-            <h2 class="text-xl font-bold uppercase tracking-wider text-white border-b border-neutral-800 pb-3 mb-4 flex justify-between items-center">
-                View Screen <span class="text-xs text-neutral-500 font-mono">RECEIVER MODE</span>
-            </h2>
-            <p class="text-neutral-400 text-sm mb-4">Select an active stream from the live LAN feeds below:</p>
-            
-            <!-- Child Cards Container -->
-            <div id="device-cards-container" class="flex-1 grid grid-cols-1 gap-3 overflow-y-auto max-h-[320px] pr-1">
-                <div id="no-devices" class="text-neutral-600 text-center py-8 border border-dashed border-neutral-800 rounded text-sm font-mono">
-                    NO ACTIVE FEEDS DETECTED ON NETWORK.
+        <!-- View Card -->
+        <section class="card">
+            <div>
+                <div class="card-header">
+                    <div class="card-title">View Screen</div>
+                    <div class="badge-mode" style="color: #737373;">RECEIVER MODE</div>
+                </div>
+                <div class="card-desc">Select an active stream from the live LAN feeds below:</div>
+                <div id="device-cards-container" class="cards-list">
+                    <div id="no-devices" class="no-feeds">NO ACTIVE FEEDS DETECTED ON NETWORK.</div>
                 </div>
             </div>
         </section>
-
     </main>
 
     <!-- Fullscreen Stream Viewer Modal -->
-    <div id="viewer-modal" class="fixed inset-0 bg-black/95 z-50 hidden flex-col">
-        <div class="p-4 bg-neutral-900 border-b border-neutral-800 flex justify-between items-center">
-            <span id="active-stream-title" class="text-white font-bold font-mono uppercase tracking-wider text-sm">VIEWING STREAM</span>
-            <button onclick="closeViewer()" class="px-4 py-1 bg-red-600 hover:bg-red-700 text-white text-xs uppercase font-bold rounded">Close Feed</button>
+    <div id="viewer-modal">
+        <div class="viewer-header">
+            <span id="active-stream-title" style="font-family: monospace; font-weight: bold;">VIEWING STREAM</span>
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                <button onclick="toggleFullScreen()" class="btn btn-outline" style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.75rem;">
+                    fullscreen [F]
+                </button>
+                <button onclick="closeViewer()" class="btn btn-red" style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.75rem;">
+                    Close Feed
+                </button>
+            </div>
         </div>
-        <div class="flex-1 flex items-center justify-center p-4">
-            <video id="remote-video" autoplay playsinline class="max-h-full max-w-full rounded border border-neutral-800 bg-black video-frame"></video>
+        <div class="viewer-body" id="video-container">
+            <video id="remote-video" autoplay playsinline controls style="cursor: pointer;"></video>
         </div>
     </div>
 
-    <!-- Scripts -->
-    <script src="/js/rtc.js"></script>
     <script src="/js/app.js"></script>
+    <script src="/js/rtc.js"></script>
 </body>
 </html>

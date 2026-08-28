@@ -1,19 +1,19 @@
-// UI Helper Logic
+// UI State & DOM Controller
 const statusEl = document.getElementById('connection-status');
 const cardsContainer = document.getElementById('device-cards-container');
 const viewerModal = document.getElementById('viewer-modal');
 
-function updateConnectionUI(isConnected) {
+window.updateConnectionUI = function(isConnected) {
     if (isConnected) {
         statusEl.textContent = "ONLINE";
-        statusEl.className = "text-xs font-mono uppercase px-3 py-1 bg-red-600/10 border border-red-600 text-red-500 rounded font-bold";
+        statusEl.className = "status-badge status-online";
     } else {
         statusEl.textContent = "OFFLINE";
-        statusEl.className = "text-xs font-mono uppercase px-3 py-1 bg-neutral-900 border border-neutral-700 text-neutral-400 rounded";
+        statusEl.className = "status-badge";
     }
-}
+};
 
-function toggleSharingUI(isBroadcasting) {
+window.toggleSharingUI = function(isBroadcasting) {
     const startBtn = document.getElementById('btn-start-share');
     const stopBtn = document.getElementById('btn-stop-share');
     if (isBroadcasting) {
@@ -23,62 +23,87 @@ function toggleSharingUI(isBroadcasting) {
         startBtn.classList.remove('hidden');
         stopBtn.classList.add('hidden');
     }
-}
+};
 
-function renderDeviceCards(streams) {
+window.renderDeviceCards = function(streams) {
     cardsContainer.innerHTML = '';
     const activeKeys = Object.keys(streams).filter(id => id !== socket.id);
     if (activeKeys.length === 0) {
-        renderNoDevicesPlaceholder();
+        window.renderNoDevicesPlaceholder();
     } else {
-        activeKeys.forEach(id => addDeviceCard(id, streams[id]));
+        activeKeys.forEach(id => window.addDeviceCard(id, streams[id]));
     }
-}
+};
 
-function addDeviceCard(id, name) {
+window.addDeviceCard = function(id, name) {
     const noDev = document.getElementById('no-devices');
     if (noDev) noDev.remove();
-
     if (document.getElementById(`card-${id}`)) return;
 
     const card = document.createElement('div');
     card.id = `card-${id}`;
-    card.className = "p-4 bg-black border border-neutral-800 rounded flex justify-between items-center hover:border-red-600 transition";
+    card.className = "feed-card";
     card.innerHTML = `
         <div>
-            <p class="font-bold text-white text-sm">${name}</p>
-            <p class="text-xs text-neutral-500 font-mono">ID: ${id.substring(0, 8)}...</p>
+            <div style="font-weight: bold; font-size: 0.9rem;">${name}</div>
+            <div style="font-family: monospace; font-size: 0.75rem; color: #737373;">ID: ${id.substring(0, 8)}...</div>
         </div>
-        <button onclick="connectToStream('${id}', '${name}')" class="px-4 py-2 bg-white text-black hover:bg-red-600 hover:text-white font-bold text-xs uppercase tracking-wider rounded transition">
-            Watch Feed
-        </button>
+        <button onclick="connectToStream('${id}', '${name}')" class="btn feed-btn">Watch Feed</button>
     `;
     cardsContainer.appendChild(card);
-}
+};
 
-function removeDeviceCard(id) {
+window.removeDeviceCard = function(id) {
     const card = document.getElementById(`card-${id}`);
     if (card) card.remove();
     if (cardsContainer.children.length === 0) {
-        renderNoDevicesPlaceholder();
+        window.renderNoDevicesPlaceholder();
     }
-}
+};
 
-function renderNoDevicesPlaceholder() {
+window.renderNoDevicesPlaceholder = function() {
     cardsContainer.innerHTML = `
-        <div id="no-devices" class="text-neutral-600 text-center py-8 border border-dashed border-neutral-800 rounded text-sm font-mono">
-            NO ACTIVE FEEDS DETECTED ON NETWORK.
-        </div>
+        <div id="no-devices" class="no-feeds">NO ACTIVE FEEDS DETECTED ON NETWORK.</div>
     `;
-}
+};
 
-function openVideoViewer(name) {
+window.openVideoViewer = function(name) {
     document.getElementById('active-stream-title').textContent = `LIVE FEED: ${name}`;
-    viewerModal.classList.remove('hidden');
-    viewerModal.classList.add('flex');
-}
+    viewerModal.style.display = 'flex';
+};
 
-function closeVideoViewerUI() {
-    viewerModal.classList.add('hidden');
-    viewerModal.classList.remove('flex');
-}
+window.closeVideoViewerUI = function() {
+    viewerModal.style.display = 'none';
+};
+
+// Fullscreen Control Logic - Targets video directly to fix aspect constraints
+window.toggleFullScreen = function() {
+    const remoteVideo = document.getElementById('remote-video');
+
+    if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+        if (remoteVideo.requestFullscreen) {
+            remoteVideo.requestFullscreen();
+        } else if (remoteVideo.webkitRequestFullscreen) {
+            remoteVideo.webkitRequestFullscreen();
+        }
+    } else {
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+        }
+    }
+};
+
+// Double-click on video to toggle fullscreen directly
+document.getElementById('remote-video').addEventListener('dblclick', () => {
+    window.toggleFullScreen();
+});
+
+// Keyboard shortcut: Press 'F' to toggle fullscreen while watching
+document.addEventListener('keydown', (e) => {
+    const viewerModal = document.getElementById('viewer-modal');
+    if (viewerModal.style.display === 'flex' && (e.key === 'f' || e.key === 'F')) {
+        window.toggleFullScreen();
+    }
+});

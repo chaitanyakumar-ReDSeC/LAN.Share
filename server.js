@@ -23,6 +23,11 @@ io.on('connection', (socket) => {
         io.emit('stream-added', { id: socket.id, name: activeStreams[socket.id] });
     });
 
+    // Broadcast fallback frames to all connected receivers
+    socket.on('stream-frame', (frameData) => {
+        socket.broadcast.emit('stream-frame', frameData);
+    });
+
     // Handle stream stop
     socket.on('stop-share', () => {
         if (activeStreams[socket.id]) {
