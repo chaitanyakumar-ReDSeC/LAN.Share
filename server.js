@@ -56,6 +56,12 @@ io.on('connection', (socket) => {
 function getLocalIp() {
     const interfaces = os.networkInterfaces();
     for (const name of Object.keys(interfaces)) {
+        // Skip virtual interfaces (Hyper-V, VirtualBox, WSL, vEthernet)
+        const lowerName = name.toLowerCase();
+        if (lowerName.includes('virtual') || lowerName.includes('wsl') || lowerName.includes('vethernet') || lowerName.includes('vmnet')) {
+            continue;
+        }
+
         for (const iface of interfaces[name]) {
             if (iface.family === 'IPv4' && !iface.internal) {
                 return iface.address;
