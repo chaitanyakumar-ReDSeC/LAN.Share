@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LANshare | Command Center</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <!-- Custom CSS Link -->
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="min-h-screen flex flex-col font-sans">
+
+    <!-- Header -->
+    <header class="border-b border-red-600/40 bg-black p-4 px-8 flex justify-between items-center">
+        <div class="flex items-center space-x-3">
+            <div class="w-3 h-3 rounded-full bg-red-600 pulse-red"></div>
+            <h1 class="text-2xl font-black tracking-widest text-white uppercase">LAN<span class="text-red-600">share</span></h1>
+        </div>
+        <span id="connection-status" class="text-xs uppercase px-3 py-1 bg-neutral-900 border border-neutral-700 text-neutral-400 rounded">Connecting...</span>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+        
+        <!-- CARD 1: Share Screen -->
+        <section class="bg-neutral-900/90 border border-neutral-800 rounded-lg p-6 flex flex-col justify-between card-hover">
+            <div>
+                <h2 class="text-xl font-bold uppercase tracking-wider text-white border-b border-neutral-800 pb-3 mb-4 flex justify-between items-center">
+                    Share Screen <span class="text-xs text-red-600 font-mono">HOST MODE</span>
+                </h2>
+                <p class="text-neutral-400 text-sm mb-6">Broadcast your display directly to any LAN device connected on this network.</p>
+                <input type="text" id="device-name" placeholder="Device Label (e.g. Sir's Rig)" class="w-full bg-black border border-neutral-800 rounded p-3 text-white focus:outline-none focus:border-red-600 mb-4 text-sm font-mono">
+            </div>
+            
+            <div id="share-controls">
+                <button id="btn-start-share" onclick="startSharing()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 uppercase tracking-wider rounded transition">
+                    Start Sharing
+                </button>
+                <button id="btn-stop-share" onclick="stopSharing()" class="hidden w-full bg-neutral-950 border border-red-600 text-red-600 hover:bg-red-600 hover:text-white font-bold py-3 uppercase tracking-wider rounded transition">
+                    Stop Broadcast
+                </button>
+            </div>
+        </section>
+
+        <!-- CARD 2: View Screen -->
+        <section class="bg-neutral-900/90 border border-neutral-800 rounded-lg p-6 flex flex-col card-hover">
+            <h2 class="text-xl font-bold uppercase tracking-wider text-white border-b border-neutral-800 pb-3 mb-4 flex justify-between items-center">
+                View Screen <span class="text-xs text-neutral-500 font-mono">RECEIVER MODE</span>
+            </h2>
+            <p class="text-neutral-400 text-sm mb-4">Select an active stream from the live LAN feeds below:</p>
+            
+            <!-- Child Cards Container -->
+            <div id="device-cards-container" class="flex-1 grid grid-cols-1 gap-3 overflow-y-auto max-h-[320px] pr-1">
+                <div id="no-devices" class="text-neutral-600 text-center py-8 border border-dashed border-neutral-800 rounded text-sm font-mono">
+                    NO ACTIVE FEEDS DETECTED ON NETWORK.
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Fullscreen Stream Viewer Modal -->
+    <div id="viewer-modal" class="fixed inset-0 bg-black/95 z-50 hidden flex-col">
+        <div class="p-4 bg-neutral-900 border-b border-neutral-800 flex justify-between items-center">
+            <span id="active-stream-title" class="text-white font-bold font-mono uppercase tracking-wider text-sm">VIEWING STREAM</span>
+            <button onclick="closeViewer()" class="px-4 py-1 bg-red-600 hover:bg-red-700 text-white text-xs uppercase font-bold rounded">Close Feed</button>
+        </div>
+        <div class="flex-1 flex items-center justify-center p-4">
+            <video id="remote-video" autoplay playsinline class="max-h-full max-w-full rounded border border-neutral-800 bg-black video-frame"></video>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/js/rtc.js"></script>
+    <script src="/js/app.js"></script>
+</body>
+</html>
