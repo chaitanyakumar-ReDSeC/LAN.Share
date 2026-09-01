@@ -46,7 +46,7 @@ window.addDeviceCard = function(id, name) {
     card.innerHTML = `
         <div>
             <div style="font-weight: bold; font-size: 0.9rem;">${name}</div>
-            <div style="font-family: monospace; font-size: 0.75rem; color: #737373;">ID: ${id.substring(0, 8)}...</div>
+            <div style="font-family: monospace; font-size: 0.75rem; color: #dc2626;">ID: ${id.substring(0, 8)}...</div>
         </div>
         <button onclick="connectToStream('${id}', '${name}')" class="btn feed-btn">Watch Feed</button>
     `;

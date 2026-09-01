@@ -1,3 +1,5 @@
+// rtc.js
+
 const socket = io();
 let localStream = null;
 let peerConnection = null;
@@ -20,7 +22,16 @@ socket.on('stream-removed', (id) => window.removeDeviceCard(id));
 async function startSharing() {
     const labelInput = document.getElementById('device-name').value.trim() || 'Host Device';
     try {
-        localStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+        // High-Quality WebRTC Display Constraints (1080p ideal target @ 60 FPS)
+        localStream = await navigator.mediaDevices.getDisplayMedia({ 
+            video: {
+                width: { ideal: 1920, max: 1920 },
+                height: { ideal: 1080, max: 1080 },
+                frameRate: { ideal: 60, max: 60 }
+            }, 
+            audio: false 
+        });
+
         window.toggleSharingUI(true);
         socket.emit('start-share', labelInput);
         
@@ -98,7 +109,17 @@ socket.on('offer', async ({ sender, offer }) => {
     peerConnection = new RTCPeerConnection(rtcConfig);
 
     if (localStream) {
-        localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+        localStream.getTracks().forEach(track => {
+            const rtpSender = peerConnection.addTrack(track, localStream);
+
+            // Fine-tune WebRTC sender for high bitrate local streaming (6 Mbps target)
+            if (track.kind === 'video') {
+                const parameters = rtpSender.getParameters();
+                if (!parameters.encodings) parameters.encodings = [{}];
+                parameters.encodings[0].maxBitrate = 6000000;
+                rtpSender.setParameters(parameters).catch(err => console.error("Bitrate limit error:", err));
+            }
+        });
     }
 
     peerConnection.onicecandidate = (event) => {

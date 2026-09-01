@@ -3,152 +3,364 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LANshare</title>
+    <title id="dynamic-title">LANshare</title>
+    
+    <!-- Google Fonts: Space Grotesk & Montserrat -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    
     <script src="/socket.io/socket.io.js"></script>
+
     <style>
         :root {
-            --bg-black: #0a0a0a;
-            --panel-bg: #141414;
-            --panel-border: #262626;
+            --bg-black: #09090b;
+            --panel-bg: rgba(20, 20, 23, 0.65);
+            --panel-border: rgba(255, 255, 255, 0.08);
+            --panel-border-hover: rgba(220, 38, 38, 0.4);
             --accent-red: #dc2626;
-            --accent-red-hover: #b91c1c;
-            --text-white: #ffffff;
-            --text-muted: #a3a3a3;
+            --accent-red-glow: rgba(220, 38, 38, 0.35);
+            --accent-red-hover: #ef4444;
+            --text-white: #f8fafc;
+            --text-muted: #94a3b8;
+            --font-heading: 'Space Grotesk', sans-serif;
+            --font-body: 'Montserrat', sans-serif;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
+
         body {
             background-color: var(--bg-black);
+            background-image: 
+                radial-gradient(circle at 15% 20%, rgba(220, 38, 38, 0.08) 0%, transparent 45%),
+                radial-gradient(circle at 85% 80%, rgba(220, 38, 38, 0.05) 0%, transparent 45%);
             color: var(--text-white);
-            font-family: system-ui, -apple-system, sans-serif;
+            font-family: var(--font-body);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            overflow-x: hidden;
         }
 
-        /* Header */
+        /* Header Layout */
         header {
-            background-color: #000;
-            border-bottom: 1px solid rgba(220, 38, 38, 0.4);
-            padding: 1rem 2rem;
+            background: rgba(9, 9, 11, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--panel-border);
+            padding: 1.25rem 2.5rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 50;
         }
-        .logo-container { display: flex; align-items: center; gap: 0.75rem; }
+
+        .logo-container { 
+            display: flex; 
+            align-items: center; 
+            gap: 0.85rem; 
+        }
+
         .pulse-red {
-            width: 12px; height: 12px; border-radius: 50%;
+            width: 10px; 
+            height: 10px; 
+            border-radius: 50%;
             background-color: var(--accent-red);
-            box-shadow: 0 0 10px var(--accent-red);
-            animation: pulse 2s infinite;
+            box-shadow: 0 0 12px var(--accent-red);
+            animation: pulse 2s infinite ease-in-out;
         }
+
         @keyframes pulse {
-            0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; }
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(220, 38, 38, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
         }
-        .logo-text { font-size: 1.5rem; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; }
+
+        .logo-text { 
+            font-family: var(--font-heading);
+            font-size: 1.5rem; 
+            font-weight: 700; 
+            letter-spacing: 2px; 
+            text-transform: uppercase; 
+        }
+
         .logo-text span { color: var(--accent-red); }
+
         .status-badge {
-            font-family: monospace; font-size: 0.75rem; text-transform: uppercase;
-            padding: 0.25rem 0.75rem; background-color: #171717; border: 1px solid #404040;
-            color: #a3a3a3; border-radius: 4px;
+            font-family: var(--font-heading); 
+            font-size: 0.75rem; 
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 0.4rem 0.9rem; 
+            background: rgba(255, 255, 255, 0.03); 
+            border: 1px solid var(--panel-border);
+            color: var(--text-muted); 
+            border-radius: 20px;
+            backdrop-filter: blur(8px);
+            transition: all 0.3s ease;
         }
-        .status-online { background-color: rgba(220, 38, 38, 0.1); border-color: var(--accent-red); color: var(--accent-red); font-weight: bold; }
 
-        /* Main Dashboard */
+        .status-online { 
+            background: rgba(220, 38, 38, 0.1); 
+            border-color: rgba(220, 38, 38, 0.5); 
+            color: var(--accent-red); 
+            box-shadow: 0 0 15px var(--accent-red-glow);
+        }
+
+        /* Main Dashboard Layout */
         main {
-            flex: 1; max-width: 1280px; width: 100%; margin: 0 auto; padding: 2rem;
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 2rem;
+            flex: 1; 
+            max-width: 1000px; 
+            width: 100%; 
+            margin: 0 auto; 
+            padding: 2.5rem 2rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 2rem;
+            animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
         }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         .card {
-            background-color: var(--panel-bg); border: 1px solid var(--panel-border);
-            border-radius: 8px; padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between;
-            transition: border-color 0.2s;
+            background: var(--panel-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--panel-border);
+            border-radius: 16px; 
+            padding: 2.25rem 2.5rem; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: space-between;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            width: 100%;
+            overflow: hidden;
         }
-        .card:hover { border-color: rgba(220, 38, 38, 0.5); }
+
+        .card:hover { 
+            border-color: var(--panel-border-hover); 
+            box-shadow: 0 8px 32px 0 rgba(220, 38, 38, 0.15);
+        }
+
         .card-header {
-            display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 1px solid var(--panel-border); padding-bottom: 0.75rem; margin-bottom: 1rem;
-        }
-        .card-title { font-size: 1.25rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
-        .badge-mode { font-size: 0.7rem; font-family: monospace; color: var(--accent-red); }
-        .card-desc { color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.5rem; }
-
-        /* Form Inputs & Buttons */
-        input[type="text"] {
-            width: 100%; background: #000; border: 1px solid var(--panel-border);
-            border-radius: 4px; padding: 0.75rem; color: #fff; font-size: 0.875rem;
-            margin-bottom: 1rem; outline: none; font-family: monospace;
-        }
-        input[type="text"]:focus { border-color: var(--accent-red); }
-        .btn {
-            width: 100%; padding: 0.85rem; font-weight: 700; text-transform: uppercase;
-            letter-spacing: 1px; border-radius: 4px; cursor: pointer; border: none; transition: background 0.2s;
-        }
-        .btn-red { background-color: var(--accent-red); color: #fff; }
-        .btn-red:hover { background-color: var(--accent-red-hover); }
-        .btn-outline { background: #000; border: 1px solid var(--accent-red); color: var(--accent-red); }
-        .btn-outline:hover { background: var(--accent-red); color: #fff; }
-
-        /* Stream Feed Cards */
-        .cards-list { display: flex; flex-direction: column; gap: 0.75rem; max-height: 300px; overflow-y: auto; }
-        .feed-card {
-            background: #000; border: 1px solid var(--panel-border); border-radius: 4px;
-            padding: 1rem; display: flex; justify-content: space-between; align-items: center;
-        }
-        .feed-card:hover { border-color: var(--accent-red); }
-        .feed-btn { width: auto; padding: 0.5rem 1rem; font-size: 0.75rem; background: #fff; color: #000; }
-        .feed-btn:hover { background: var(--accent-red); color: #fff; }
-        .no-feeds { text-align: center; color: #525252; font-family: monospace; padding: 2rem 0; font-size: 0.875rem; border: 1px dashed var(--panel-border); border-radius: 4px; }
-
-        /* Viewer Modal */
-        #viewer-modal {
-            position: fixed; inset: 0; background: #000; z-index: 99;
-            display: none; flex-direction: column; width: 100vw; height: 100vh;
-        }
-        .viewer-header { 
-            background: var(--panel-bg); 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
             border-bottom: 1px solid var(--panel-border); 
-            padding: 0.75rem 1.5rem; 
+            padding-bottom: 1rem; 
+            margin-bottom: 1.25rem;
+        }
+
+        .card-title { 
+            font-family: var(--font-heading);
+            font-size: 1.35rem; 
+            font-weight: 700; 
+            letter-spacing: 1.5px;
+            text-transform: uppercase; 
+        }
+
+        .badge-mode { 
+            font-family: var(--font-heading); 
+            font-size: 0.7rem; 
+            letter-spacing: 1px;
+            color: var(--accent-red); 
+            background: rgba(220, 38, 38, 0.1);
+            padding: 0.25rem 0.6rem;
+            border-radius: 6px;
+            border: 1px solid rgba(220, 38, 38, 0.2);
+        }
+
+        .card-desc { 
+            color: var(--text-muted); 
+            font-size: 0.95rem; 
+            line-height: 1.6;
+            margin-bottom: 1.5rem; 
+        }
+
+        /* Controls */
+        input[type="text"] {
+            width: 100%; 
+            background: rgba(0, 0, 0, 0.4); 
+            border: 1px solid var(--panel-border);
+            border-radius: 10px; 
+            padding: 1rem 1.25rem; 
+            color: var(--text-white); 
+            font-family: var(--font-body);
+            font-size: 0.95rem;
+            margin-bottom: 1.5rem; 
+            outline: none; 
+            transition: all 0.3s ease;
+        }
+
+        input[type="text"]:focus { 
+            border-color: var(--accent-red); 
+            box-shadow: 0 0 15px var(--accent-red-glow);
+        }
+
+        .btn {
+            width: 100%; 
+            padding: 1rem 1.5rem; 
+            font-family: var(--font-heading);
+            font-weight: 700; 
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px; 
+            border-radius: 10px; 
+            cursor: pointer; 
+            border: none; 
+            transition: all 0.3s ease;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-red { 
+            background-color: var(--accent-red); 
+            color: #fff; 
+            box-shadow: 0 4px 20px var(--accent-red-glow);
+        }
+
+        .btn-red:hover { 
+            background-color: var(--accent-red-hover); 
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px rgba(220, 38, 38, 0.5);
+        }
+
+        .btn-outline { 
+            background: rgba(0, 0, 0, 0.4); 
+            border: 1px solid var(--accent-red); 
+            color: var(--accent-red); 
+        }
+
+        .btn-outline:hover { 
+            background: var(--accent-red); 
+            color: #fff; 
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px var(--accent-red-glow);
+        }
+
+        /* Strictly Prevent All Scrollbars */
+        .cards-list { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 0.85rem; 
+            width: 100%;
+            overflow: hidden !important; 
+        }
+
+        .feed-card {
+            background: rgba(0, 0, 0, 0.3); 
+            border: 1px solid var(--panel-border); 
+            border-radius: 10px;
+            padding: 1.15rem 1.4rem; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            transition: background 0.3s ease, border-color 0.3s ease;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .feed-card:hover { 
+            border-color: var(--accent-red); 
+            background: rgba(220, 38, 38, 0.05);
+        }
+
+        .feed-btn { 
+            width: auto; 
+            padding: 0.55rem 1.25rem; 
+            font-size: 0.75rem; 
+            background: var(--text-white); 
+            color: #000; 
+            border-radius: 6px;
+            white-space: nowrap;
+        }
+
+        .feed-btn:hover { 
+            background: var(--accent-red); 
+            color: #fff; 
+        }
+
+        .no-feeds { 
+            text-align: center; 
+            color: var(--text-muted); 
+            font-family: var(--font-heading); 
+            letter-spacing: 1px;
+            padding: 3rem 1rem; 
+            font-size: 0.85rem; 
+            border: 1px dashed var(--panel-border); 
+            border-radius: 10px; 
+            background: rgba(0, 0, 0, 0.2);
+            width: 100%;
+        }
+
+        /* Cinema Viewer Floating Modal */
+        #viewer-modal {
+            position: fixed; 
+            inset: 0; 
+            background: #000; 
+            z-index: 99;
+            display: none; 
+            flex-direction: column; 
+            width: 100vw; 
+            height: 100vh;
+        }
+
+        .viewer-header { 
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            background: linear-gradient(180deg, rgba(9, 9, 11, 0.95) 0%, rgba(9, 9, 11, 0) 100%); 
+            padding: 1.5rem 2rem; 
             display: flex; 
             justify-content: space-between; 
             align-items: center;
             z-index: 10;
+            opacity: 0;
+            transition: opacity 0.3s ease;
         }
+
+        #viewer-modal:hover .viewer-header { opacity: 1; }
+
         .viewer-body { 
             flex: 1; 
             display: flex; 
             align-items: center; 
             justify-content: center; 
-            padding: 0;
-            margin: 0;
-            width: 100%;
-            height: 100%;
+            width: 100%; height: 100%;
             background: #000;
             overflow: hidden;
         }
 
-        /* Fullscreen-ready video element */
         video { 
-            width: 100%; 
-            height: 100%; 
-            max-width: 100vw;
-            max-height: 100vh;
+            width: 100%; height: 100%; 
+            max-width: 100vw; max-height: 100vh;
             object-fit: contain; 
             background: #000; 
-            border: none; 
-            outline: none;
+            border: none; outline: none;
         }
 
-        :fullscreen, :-webkit-full-screen {
-            width: 100vw !important;
-            height: 100vh !important;
+        /* Suppress standard and fullscreen browser native video controls */
+        video::-webkit-media-controls,
+        video::-webkit-media-controls-enclosure,
+        video::-webkit-media-controls-panel {
+            display: none !important;
+            -webkit-appearance: none !important;
         }
 
-        :fullscreen video, :-webkit-full-screen video {
-            width: 100vw !important;
-            height: 100vh !important;
-            object-fit: contain !important;
+        video::-moz-media-controls {
+            display: none !important;
         }
+
+        :fullscreen, :-webkit-full-screen { width: 100vw !important; height: 100vh !important; }
+        :fullscreen video, :-webkit-full-screen video { width: 100vw !important; height: 100vh !important; object-fit: contain !important; }
 
         .hidden { display: none !important; }
     </style>
@@ -164,15 +376,15 @@
     </header>
 
     <main>
-        <!-- Share Card -->
-        <section class="card">
+        <!-- Share Card (Rendered exclusively for Host/Server access) -->
+        <section id="host-share-card" class="card hidden">
             <div>
                 <div class="card-header">
                     <div class="card-title">Share Screen</div>
                     <div class="badge-mode">HOST MODE</div>
                 </div>
-                <div class="card-desc">Broadcast your display directly to any LAN device connected on this network.</div>
-                <input type="text" id="device-name" placeholder="Device Label (e.g. Chaitanya)">
+                <div class="card-desc">Broadcast high-definition video directly across your local network to connected client devices.</div>
+                <input type="text" id="device-name" placeholder="Device Label (e.g. Master Terminal)">
             </div>
             <div>
                 <button id="btn-start-share" onclick="startSharing()" class="btn btn-red">Start Sharing</button>
@@ -180,14 +392,14 @@
             </div>
         </section>
 
-        <!-- View Card -->
-        <section class="card">
+        <!-- View Card (Rendered exclusively for Receiver IP clients) -->
+        <section id="client-view-card" class="card hidden">
             <div>
                 <div class="card-header">
                     <div class="card-title">View Screen</div>
-                    <div class="badge-mode" style="color: #737373;">RECEIVER MODE</div>
+                    <div class="badge-mode">RECEIVER MODE</div>
                 </div>
-                <div class="card-desc">Select an active stream from the live LAN feeds below:</div>
+                <div class="card-desc">Select an active broadcast feed from the local network to view in real-time:</div>
                 <div id="device-cards-container" class="cards-list">
                     <div id="no-devices" class="no-feeds">NO ACTIVE FEEDS DETECTED ON NETWORK.</div>
                 </div>
@@ -198,22 +410,42 @@
     <!-- Fullscreen Stream Viewer Modal -->
     <div id="viewer-modal">
         <div class="viewer-header">
-            <span id="active-stream-title" style="font-family: monospace; font-weight: bold;">VIEWING STREAM</span>
-            <div style="display: flex; gap: 0.5rem; align-items: center;">
-                <button onclick="toggleFullScreen()" class="btn btn-outline" style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.75rem;">
-                    fullscreen [F]
+            <span id="active-stream-title" style="font-family: var(--font-heading); font-weight: 700; letter-spacing: 1px;">VIEWING STREAM</span>
+            <div style="display: flex; gap: 0.75rem; align-items: center;">
+                <button onclick="toggleFullScreen()" class="btn btn-outline" style="width: auto; padding: 0.5rem 1rem; font-size: 0.75rem; backdrop-filter: blur(8px);">
+                    Fullscreen [F]
                 </button>
-                <button onclick="closeViewer()" class="btn btn-red" style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.75rem;">
+                <button onclick="closeViewer()" class="btn btn-red" style="width: auto; padding: 0.5rem 1rem; font-size: 0.75rem;">
                     Close Feed
                 </button>
             </div>
         </div>
         <div class="viewer-body" id="video-container">
-            <video id="remote-video" autoplay playsinline controls style="cursor: pointer;"></video>
+            <video id="remote-video" autoplay playsinline style="cursor: pointer;"></video>
         </div>
     </div>
 
     <script src="/js/app.js"></script>
     <script src="/js/rtc.js"></script>
+    
+    <script>
+        // Strictly separate Server vs Receiver UI based on hostname
+        document.addEventListener("DOMContentLoaded", () => {
+            const hostname = window.location.hostname;
+            const isLocalHost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
+            
+            const shareCard = document.getElementById('host-share-card');
+            const viewCard = document.getElementById('client-view-card');
+            const titleElement = document.getElementById('dynamic-title');
+
+            if (isLocalHost) {
+                if (shareCard) shareCard.classList.remove('hidden');
+                if (titleElement) titleElement.textContent = "LANshare [Server]";
+            } else {
+                if (viewCard) viewCard.classList.remove('hidden');
+                if (titleElement) titleElement.textContent = "LANshare [Receiver]";
+            }
+        });
+    </script>
 </body>
 </html>
